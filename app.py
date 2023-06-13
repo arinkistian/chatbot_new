@@ -1,3 +1,4 @@
+import os
 import json
 import numpy as np
 from tensorflow import keras
@@ -7,10 +8,9 @@ from flask import Flask, render_template, request, jsonify
 import random
 import pickle
 
-app = Flask(__name__)
+app = Flask(name)
 
-# Load data from intents.json file
-with open('intents.json') as file:
+with open('pet.json', 'r') as file:
     data = json.load(file)
 
 # Load trained model
@@ -22,10 +22,10 @@ with open('tokenizer.pickle', 'rb') as handle:
 
 # Load label encoder object
 with open('label_encoder.pickle', 'rb') as enc:
-    lbl_encoder = pickle.load(enc)
+    tag_encoder = pickle.load(enc)
 
 # Parameters
-max_len = 20
+max_len = 25
 
 
 @app.route('/')
@@ -40,12 +40,11 @@ def chat():
     if user_input.lower() == 'quit':
         response = "Terimakasih, sampai jumpa lagi!"
     else:
-        result = model.predict(keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([user_input]),
-                                                                         truncating='post', maxlen=max_len))
-        tag = lbl_encoder.inverse_transform([np.argmax(result)])
+        result = model.predict(keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([user_input]),truncating='post', maxlen=max_len))
+        tag = tag_encoder.inverse_transform([np.argmax(result)])
         found_tag = False
 
-        for intent in data['intents']:
+        for intent in data['pet']:
             if intent['tag'] == tag:
                 response = random.choice(intent['responses'])
                 found_tag = True
@@ -56,5 +55,5 @@ def chat():
     return jsonify({'response': response})
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if name == 'main':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 3000)), debug=True)
